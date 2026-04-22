@@ -1,15 +1,17 @@
 package net.basicgo.tutucast_demo;
 
+import static net.basicgo.tutucast_demo.CommonUtil.getLocalIpAddress;
+
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.net.nsd.NsdServiceInfo;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.KeyEvent;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,6 +24,8 @@ import com.show.dlnadmr.center.MediaControlBrocastFactory;
 import com.show.dlnadmr.player.PlayerEngineListener;
 
 import net.basicgo.tutucast.PlatinumReflection;
+
+import java.util.Random;
 
 import de.badaix.snapcast.SnapclientService;
 import de.badaix.snapcast.SnapserverService;
@@ -38,7 +42,7 @@ public class MainActivity extends AppCompatActivity
         implements RemoteControl.RemoteControlListener, SnapclientService.SnapclientListener, NsdHelper.NsdHelperListener
         ,PlatinumReflection.ActionReflectionListener
         , PlayerEngineListener {
-    private static final String TAG = "dlna";
+
     private static final String SERVICE_NAME = "tutucast";// #2";
     private boolean bound = false;
     private SnapclientService snapclientService;
@@ -117,8 +121,17 @@ public class MainActivity extends AppCompatActivity
         /*
         启动Airplay2全屋音频
          */
+        String ip4Addr = getLocalIpAddress();
+        String dev_name;
+        if(ip4Addr != null) {
+            int lastDotIndex = ip4Addr.lastIndexOf('.');
+           dev_name = ((lastDotIndex != -1) ? ip4Addr.substring(lastDotIndex) : "-");
+        }else{
+            final Random random = new Random();
+            dev_name = "." + random.nextInt(99);
+        }
         PlatinumReflection.setActionInvokeListener(this,this);
-        PlatinumReflection.TutucastStart("test1234");
+        PlatinumReflection.TutucastStart(/*Build.BRAND + " " +*/ Build.MODEL + dev_name);
     }
 
     @Override
@@ -309,7 +322,6 @@ public class MainActivity extends AppCompatActivity
 
         /*测试播放url*/
         //MediaControlBrocastFactory.loadMedia(this,"http://music.163.com/song/media/outer/url?id=25906124.mp3");
-        //MediaControlBrocastFactory.loadMedia(this,"http://aqqmusic.tc.qq.com/M500002OnWzi4RmHTE.mp3?guid=ffffffffe48dc4820000019cf4b7fff7&vkey=2826B03958F1F5E1618A1A12CE8280E41628A202AD2E74F06D7B40C7B66B2020A9C1FC60F7BA6AA40FB9D501E63BF7E4E17A7EBB8F6A3B52__v2b94c496&uin=&redirect=1&fromtag=111042");
     }
 
     @Override
@@ -429,60 +441,36 @@ public class MainActivity extends AppCompatActivity
      */
     @Override
     public void onTrackPlay(DlnaMediaModel dlnaMediaModel) {
-        Log.d(TAG,"onTrackPlay" );
+
     }
 
     @Override
     public void onTrackStop(DlnaMediaModel dlnaMediaModel) {
-        Log.d(TAG,"onTrackStop" );
+        Log.d("onTrackStop" , dlnaMediaModel.getUrl());
     }
 
     @Override
     public void onTrackPause(DlnaMediaModel dlnaMediaModel) {
-        Log.d(TAG,"onTrackPause" );
+
     }
 
     @Override
     public void onTrackPrepareSync(DlnaMediaModel dlnaMediaModel) {
-        Log.d(TAG,"onTrackPrepareSync" );
+
     }
 
-    private int x = 0;
     @Override
     public void onTrackPrepareComplete(DlnaMediaModel dlnaMediaModel) {
-        Log.d(TAG,"onTrackPrepareComplete" + ",duration:"+snapserverService.getDuration()
-        +",pos:"+snapserverService.getCurPos());
+        Log.d("onTrackPrepareComplete" , snapserverService.getDuration() + ","+ snapserverService.getCurPos());
     }
 
     @Override
     public void onTrackStreamError(DlnaMediaModel dlnaMediaModel) {
-        Log.d(TAG,"onTrackStreamError" );
+
     }
 
     @Override
     public void onTrackPlayComplete(DlnaMediaModel dlnaMediaModel) {
-        Log.d(TAG,"onTrackPlayComplete");
-    }
 
-
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        int pos;
-        switch (keyCode) {
-            case KeyEvent.KEYCODE_DPAD_LEFT:
-                // 处理向左按键逻辑
-                pos = snapserverService.getCurPos() - 30*1000;
-                MediaControlBrocastFactory.sendSeekBrocast(this, Math.max(pos, 0));
-                return true; // 返回 true 表示事件已处理，不再向下传递
-
-            case KeyEvent.KEYCODE_DPAD_RIGHT:
-                // 处理向右按键逻辑
-                pos = snapserverService.getCurPos() + 30*1000;
-                if(pos < snapserverService.getDuration()) MediaControlBrocastFactory.sendSeekBrocast(this, pos);
-                return true;
-
-            default:
-                return super.onKeyDown(keyCode, event);
-        }
     }
 }
